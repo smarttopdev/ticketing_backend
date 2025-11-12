@@ -23,7 +23,6 @@ public class TicketServiceConcurrencyTest {
 
     @BeforeEach
     void resetEvent() {
-        // reset event 1 to known value
         Event e = eventRepository.findById(1L).orElseThrow();
         e.setAvailableTickets(50);
         eventRepository.save(e);
@@ -32,7 +31,7 @@ public class TicketServiceConcurrencyTest {
     @Test
     void concurrentBookingsShouldNotOverbook() throws InterruptedException {
         int threads = 10;
-        int ticketsPerThread = 10; // total requested = 100, but we have only 50
+        int ticketsPerThread = 10;
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         List<Future<?>> futures = new ArrayList<>();
@@ -42,7 +41,6 @@ public class TicketServiceConcurrencyTest {
                 try {
                     ticketService.bookTickets(1L, ticketsPerThread);
                 } catch (BookingException ex) {
-                    // expected for some threads when tickets run out
                 }
             }));
         }
@@ -51,7 +49,6 @@ public class TicketServiceConcurrencyTest {
             try {
                 f.get();
             } catch (ExecutionException e) {
-                // ignore individual task failure
             }
         }
 
@@ -61,11 +58,8 @@ public class TicketServiceConcurrencyTest {
         Event e = eventRepository.findById(1L).orElseThrow();
         int remaining = e.getAvailableTickets();
 
-        // we started with 50, so remaining must be >= 0
-        // and must never be negative
         Assertions.assertTrue(remaining >= 0, "Remaining should never be negative");
 
-        // And actual sold must be <= 50
         int sold = 50 - remaining;
         Assertions.assertTrue(sold <= 50, "Should not sell more than available");
     }
